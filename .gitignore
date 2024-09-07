@@ -1,0 +1,23 @@
+# Ignore node_modules directory
+node_modules/
+
+# Ignore npm's lock file
+package-lock.json
+
+# Ignore yarn's lock file (if using Yarn)
+yarn.lock
+
+# Optionally ignore other generated files or directories
+# logs/
+# *.log
+# .env
+
+# Exclude editor-specific files (example entries)
+# .vscode/
+# .idea/
+# *.sublime-project
+# *.sublime-workspace
+
+# Exclude OS-specific files (example entries)
+# .DS_Store
+# Thumbs.db
