@@ -14,10 +14,10 @@ yarn.lock
 
 # Exclude editor-specific files (example entries)
 # .vscode/
-# .idea/
+.idea/
 # *.sublime-project
 # *.sublime-workspace
 
 # Exclude OS-specific files (example entries)
-# .DS_Store
-# Thumbs.db
+.DS_Store
+# Thumbs.index
