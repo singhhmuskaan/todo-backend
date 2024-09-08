@@ -74,8 +74,36 @@ app.post('/api/register', async (req, res) => {
         res.status(500).json({ error: 'Server error' });
     }
 });
+app.post('/api/google-signup', async (req, res) => {
+    const { name, email, googleToken } = req.body;
 
+    try {
+        // Check if email already exists
+        connection.query(`SELECT * FROM users WHERE email = ?`, [email], async (error, results) => {
+            if (error) return res.status(500).json({ error: 'Database query failed' });
 
+            if (results.length > 0) {
+                return res.status(400).json({ error: 'User already registered. Please log in.' });
+            }
+
+            // Hash password and insert new user
+            connection.query('INSERT INTO users (name, email, google_token) VALUES (?, ?, ?)', [name, email, googleToken], (err, result) => {
+                if (err) {
+                    console.error('Database insertion error:', err); // Log the error to the console
+                    return res.status(500).json({ error: 'Registration failed' });
+                }
+            
+                // Generate token
+                const token = jwt.sign({ userId: result.insertId }, 'YOUR_SECRET_KEY', { expiresIn: '1h' });
+            
+                res.status(201).json({ message: 'User registered successfully', token });
+            });
+            
+        });
+    } catch (err) {
+        res.status(500).json({ error: 'Server error' });
+    }
+});
 
 
 app.post('/api/login', (req, res) => {
@@ -120,14 +148,18 @@ app.post("/api/tasks", (req, res) => {
     const { title, description } = req.body;
     const userId = req.userId; // Extracted from the JWT in the middleware
     const status = 1;
-
-    const query = `INSERT INTO tasks (title, description, user_id, status) VALUES (?, ?, ?, ?)`;
+    
+    // SQL query to insert task along with the current timestamp
+    const query = `INSERT INTO tasks (title, description, user_id, status, created_at) VALUES (?, ?, ?, ?, NOW())`;
+    
     connection.query(query, [title, description, userId, status], (err, result) => {
         if (err) return res.status(500).json({ error: 'Failed to create task' });
 
+        // Send response with task ID
         res.status(201).json({ message: 'Task Created', taskId: result.insertId });
     });
 });
+
 
 
 // READ: Get all tasks for the logged-in user (GET)
@@ -143,6 +175,59 @@ app.get('/api/tasks', (req, res) => {
         res.json(results);
     });
 });
+
+// UPDATE: Edit a task (PUT)
+app.put('/api/tasks/:id', (req, res) => {
+    const taskId = req.params.id;
+    const { title, description, status } = req.body;
+    const userId = req.userId;
+
+    const query = `UPDATE tasks SET title = ?, description = ?, status = ? WHERE id = ? AND user_id = ?`;
+    connection.query(query, [title, description, status, taskId, userId], (err, result) => {
+        if (err) return res.status(500).json({ error: 'Failed to update task' });
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: 'Task not found or not authorized' });
+        }
+
+        res.status(200).json({ message: 'Task updated successfully' });
+    });
+});
+
+// DELETE: Delete a task (DELETE)
+app.delete('/api/tasks/:id', (req, res) => {
+    const taskId = req.params.id;
+    const userId = req.userId;
+
+    const query = `DELETE FROM tasks WHERE id = ? AND user_id = ?`;
+    connection.query(query, [taskId, userId], (err, result) => {
+        if (err) return res.status(500).json({ error: 'Failed to delete task' });
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: 'Task not found or not authorized' });
+        }
+
+        res.status(200).json({ message: 'Task deleted successfully' });
+    });
+});
+
+// READ: Get details of a specific task (GET)
+app.get('/api/tasks/:id', (req, res) => {
+    const taskId = req.params.id;
+    const userId = req.userId;
+
+    const query = `SELECT * FROM tasks WHERE id = ? AND user_id = ?`;
+    connection.query(query, [taskId, userId], (err, results) => {
+        if (err) return res.status(500).json({ error: 'Database query failed' });
+
+        if (results.length === 0) {
+            return res.status(404).json({ error: 'Task not found' });
+        }
+
+        res.json(results[0]);
+    });
+});
+
 
 // Start the server
 app.listen(PORT, () => {
