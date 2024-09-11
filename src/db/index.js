@@ -3,10 +3,10 @@ import {migrations} from "./migrations/index.js";
 
 // Create a MySQL connection
 const db = mysql.createConnection({
-    host: 'localhost',
+    host: 'junction.proxy.rlwy.net:42606',
     user: 'root',
-    password: '12345678',
-    database: 'test',
+    password: 'DkgckxAUvTGlakNYCIKrjfjMueBlEcQJ',
+    database: 'railway',
     multipleStatements: true,
 });
 
